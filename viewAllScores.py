@@ -6,10 +6,13 @@ def viewAllScoresinSet(person=None, set=None):
     c = conn.cursor()
 
     if person is not None or set is not None:
-        if not person.isidentifier() or not set.isidentifier():
+        if (person is not None and not person.isidentifier()) or (set is not None and not set.isidentifier()):
             print("Invalid input. Please use only letters, numbers, and underscores for person and set names.")
             return []
             
+
+    person = person.replace(" ", "_") if person is not None else None
+    set = set.replace(" ", "_") if set is not None else None
 
     if person is not None and set is not None:
         c.execute(f"SELECT * FROM scores WHERE person='{person}' AND setName='{set}'")
@@ -54,7 +57,7 @@ def main():
         for i, score in enumerate(scores):
             print(f"{i+1}: {score[2]}\t\t\t{score[3]}%")
     elif choice == '2':
-        person_name = input("Enter the person's name: ")
+        person_name = input("Enter the person's name (use _ for blanks): ")
         set_name = input("Enter the set name (or leave blank to view all sets): ")
         scores = viewAllScoresinSet(person=person_name, set=set_name if set_name else None)
         for i, score in enumerate(scores):
