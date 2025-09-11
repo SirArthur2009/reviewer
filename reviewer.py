@@ -4,7 +4,8 @@ import sqlite3
 FILENAME = "C:/Users/levig/OneDrive/Documents/Coding/Python/Complex_Programs/reviewer/vocaber.db"
 
 # ======= FOR LOGGING AND RETRIEVING SCORES INTO A DATABASE =======
-def logScore(setName, person, score):
+def logScore(setName: str, person: str, score: int):
+    """Logs a score into the database"""
     conn = sqlite3.connect(FILENAME)
     c = conn.cursor()
 
@@ -16,6 +17,7 @@ def logScore(setName, person, score):
     conn.close()    
 
 def retrieveTopTen(setName):
+    """Pulls the top ten scores from the database"""
     conn = sqlite3.connect(FILENAME)
     c = conn.cursor()
 
@@ -31,6 +33,7 @@ def retrieveTopTen(setName):
 
 # ======= FOR CREATING SETS AND ADDING TERMS =======
 def addTable(name, path):
+    """Adds a table to the database with the name and path"""
     conn = sqlite3.connect(FILENAME)
     c = conn.cursor()
 
@@ -49,6 +52,7 @@ def addTable(name, path):
     conn.close()
 
 def createSet():
+    """GUI For creating a set"""
     name = input("What would you like to name this set? ")
 
     path = input("What is the sub path for this set? If you do not know type in, 'I do not know'\n")
@@ -71,6 +75,7 @@ def createSet():
         addTermsToTable(name)
 
 def addTermsToTable(table):
+    """For adding terms to a table in the database (GUI)"""
     while True:
         print("\nq to quit\n")
         term = input("What's the term? \n")
@@ -82,6 +87,7 @@ def addTermsToTable(table):
         addTermToTable(term, answers, table)
 
 def addTermToTable(term, answers, table):
+    """Adds a single term to the database"""
     conn = sqlite3.connect(FILENAME)
     c = conn.cursor()
 
@@ -99,6 +105,7 @@ def addTermToTable(term, answers, table):
 
 # ======= Misc =======
 def getAllSets():
+    """Retrieves the names of all the sets"""
     conn = sqlite3.connect(FILENAME)
     c = conn.cursor()
 
@@ -111,6 +118,7 @@ def getAllSets():
     return tables
 
 def getTermsFromSet(set):
+    """Gets all the terms from a single set"""
     conn = sqlite3.connect(FILENAME)
     c = conn.cursor()
 
@@ -127,23 +135,46 @@ def getTermsFromSet(set):
 
 # ======= FOR WORKING WITH PREMADE SETS =======
 def openVocabSet():
-    score = 0
+    """Basic GUI for running thorugh the terms"""
 
-    missedTerms = []
+    score = 0 # Set score
+    missedTerms = [] # Start a missedTerms array
+    sets = getAllSets() # Grab the name of all the sets available
 
-    sets = getAllSets()
-
+    # If there's no sets, print and return
     if not sets:
         print("No sets available. Create one first.")
         return
 
-    setName = selectSet(sets)
-    terms = getTermsFromSet(setName)
+    setName = selectSet(sets)  # Select a set from the available sets
+    terms = getTermsFromSet(setName) #Get all the terms from the set selected
 
+    # If the terms are not in list form, print and return
     if not isinstance(terms, list) or not terms:
         print(terms)
         return
 
+    score, missedTerms = runThrough(terms) # Run through terms
+    
+    # Double check for missed turns and give option to run through missed ones only
+    if not missedTerms:
+        print("No missed terms.")
+    else:
+        choice = input("Do you want to run through the missed terms? (y/n) ")
+        if choice.lower() in ['y', 'yes', 'sure']:
+            runThrough(missedTerms)
+
+    # Get score and ask if wanted saved
+    myScore = round(score/len(terms)*100, 2)
+    print(f"Your final score is: {myScore}%")
+    handleScore(myScore, setName)
+
+    showLeaderboard(setName) # Show leaderboard
+
+def runThrough(terms):
+    """GUI for actually running through the terms"""
+    missedTerms = []
+    score = 0
     random.shuffle(terms)
 
     for term in terms:
@@ -173,29 +204,18 @@ def openVocabSet():
 
         if not messedUp:
             score += 1
-
-    if not missedTerms:
-        print("No missed terms.")
-    else:
-        choice = input("Do you want to run through the missed terms? (y/n) ")
-        if choice.lower() in ['y', 'yes', 'sure']:
-            runThroughMissed(missedTerms)
-
-    #This needs to be percentage below
-    myScore = round(score/len(terms)*100, 2)
-    print(f"Your final score is: {myScore}%")
-
-    handleScore(myScore, setName)
-
-    showLeaderboard(setName)
+    
+    return score, missedTerms
 
 def handleScore(score, setName):
+    """Asks for and logs score"""
     choice = input("Do you wish to log your score? (y/n) ")
     if choice.lower() in ['y', 'yes', 'sure']:
         name = input("What is your name? ")
         logScore(setName, name, score)
-
+    
 def selectSet(sets):
+    """Select set function, it was partially AI generated"""
     # Turn each subpath into a list of parts
     path_map = {tableName: subpath.split("/") for _, tableName, subpath in sets}
 
@@ -258,6 +278,7 @@ def selectSet(sets):
             print("Not a number, try again.")
 
 def showLeaderboard(setName):
+    """Display leaderboard"""
     allScores = retrieveTopTen(setName)
 
     if allScores == None:
@@ -272,21 +293,9 @@ def showLeaderboard(setName):
     
     input("\nPress Enter to Continue")
 
-def runThroughMissed(missedSets):
-    allTerms = missedSets.copy()
-    random.shuffle(allTerms)
-
-    while len(allTerms) > 0:
-        print(f"What is the answer for {allTerms[0][1]}? \n")
-        guess = input()
-        if guess.lower() in allTerms[0][2].lower().split(", "):
-            print("Correct!\n")
-            allTerms.remove(allTerms[0])
-        else:
-            print(f"Wrong. Correct answer was: {allTerms[0][2]}\n")
-
 # ======= Exit function =======
 def exit_program(): 
+    """Exit"""
     global running
     running = False
 
@@ -305,6 +314,7 @@ menu_actions = {
 
 # ======= (drum roll) Main! =======
 def main():
+    """Let's get rolling!"""
     global running
     print("Welcome to the reviewer!")
     running = True
