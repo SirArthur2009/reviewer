@@ -1,17 +1,18 @@
 import random
 import sqlite3
+import time
 
 FILENAME = "C:/Users/levig/OneDrive/Documents/Coding/Python/Complex_Programs/reviewer/vocaber.db"
 
 # ======= FOR LOGGING AND RETRIEVING SCORES INTO A DATABASE =======
-def logScore(setName: str, person: str, score: int):
+def logScore(setName: str, person: str, score: int, time: float):
     """Logs a score into the database"""
     conn = sqlite3.connect(FILENAME)
     c = conn.cursor()
 
-    c.execute("CREATE TABLE IF NOT EXISTS scores (id INTEGER PRIMARY KEY, setName TEXT, person TEXT, score INTEGER)")
+    c.execute("CREATE TABLE IF NOT EXISTS scores (id INTEGER PRIMARY KEY, setName TEXT, person TEXT, score INTEGER, time FLOAT)")
 
-    c.execute("""INSERT INTO scores (setName, person, score) VALUES (?, ?, ?)""", (setName, person, score))
+    c.execute("""INSERT INTO scores (setName, person, score, time) VALUES (?, ?, ?, ?)""", (setName, person, score, time))
 
     conn.commit()
     conn.close()    
@@ -21,9 +22,10 @@ def retrieveTopTen(setName):
     conn = sqlite3.connect(FILENAME)
     c = conn.cursor()
 
-    c.execute("CREATE TABLE IF NOT EXISTS scores (id INTEGER PRIMARY KEY, setName TEXT, person TEXT, score INTEGER)")
+    c.execute("CREATE TABLE IF NOT EXISTS scores (id INTEGER PRIMARY KEY, setName TEXT, person TEXT, score INTEGER, time FLOAT)")
 
-    c.execute("SELECT * FROM scores WHERE setName = ? ORDER BY score DESC LIMIT 10", (setName,))
+    #First order by score and then order by time, basically whoever with the high score and lowest time wins
+    c.execute("SELECT * FROM scores WHERE setName = ? ORDER BY score DESC, time ASC LIMIT 10", (setName,))
 
     topScores = c.fetchall() or None
 
@@ -140,6 +142,7 @@ def openVocabSet():
     score = 0 # Set score
     missedTerms = [] # Start a missedTerms array
     sets = getAllSets() # Grab the name of all the sets available
+    compiled = False
 
     # If there's no sets, print and return
     if not sets:
@@ -148,13 +151,26 @@ def openVocabSet():
 
     setName = selectSet(sets)  # Select a set from the available sets
     terms = getTermsFromSet(setName) #Get all the terms from the set selected
+    if input("Do you wish to compile 2 sets? (y/n)").lower() == "y":
+        setName2 = selectSet(sets)
+        terms2 = getTermsFromSet(setName2)
+        # Only combine if both are valid lists
+        if isinstance(terms, list) and isinstance(terms2, list):
+            terms += terms2
+            compiled = True
+        else:
+            print("Error: One or both sets could not be loaded.")
+            return
 
     # If the terms are not in list form, print and return
     if not isinstance(terms, list) or not terms:
         print(terms)
         return
 
+    startTime = time.time()
     score, missedTerms = runThrough(terms) # Run through terms
+    endtime = time.time()
+    totalTime = endtime - startTime
     
     # Double check for missed turns and give option to run through missed ones only
     if not missedTerms:
@@ -167,7 +183,9 @@ def openVocabSet():
     # Get score and ask if wanted saved
     myScore = round(score/len(terms)*100, 2)
     print(f"Your final score is: {myScore}%")
-    handleScore(myScore, setName)
+    
+    if not compiled:
+        handleScore(myScore, setName, totalTime)
 
     showLeaderboard(setName) # Show leaderboard
 
@@ -207,12 +225,12 @@ def runThrough(terms):
     
     return score, missedTerms
 
-def handleScore(score, setName):
+def handleScore(score, setName, time):
     """Asks for and logs score"""
     choice = input("Do you wish to log your score? (y/n) ")
     if choice.lower() in ['y', 'yes', 'sure']:
         name = input("What is your name? ")
-        logScore(setName, name, score)
+        logScore(setName, name, score, time)
     
 def selectSet(sets):
     """Select set function, it was partially AI generated"""
@@ -288,11 +306,13 @@ def showLeaderboard(setName):
 
     print(f"\n{' '*17}Leaderboard")
     for score in allScores:
-        print(f"{score[2]}{'-' * (30 - len(score[2]))}{score[3]}%")
+        print(f"{score[2]}; Time: {score[4]:.2f}{'-' * (50 - (len(score[2])+len(str(round(score[4], 2)))+8))}{score[3]}%")
     
     
     input("\nPress Enter to Continue")
 
+def handleLeaderboard():
+    showLeaderboard(setName=selectSet(getAllSets()))
 # ======= Exit function =======
 def exit_program(): 
     """Exit"""
@@ -307,9 +327,12 @@ menu_actions = {
     '2':openVocabSet,
     'open':openVocabSet,
     'open set':openVocabSet,
+    '3':handleLeaderboard,
+    'handle':handleLeaderboard,
+    'scores':handleLeaderboard,
     'exit': exit_program,
     'q': exit_program,
-    '3': exit_program
+    '4': exit_program
 }
 
 # ======= (drum roll) Main! =======
@@ -323,8 +346,9 @@ def main():
         print("""
 Menu
 1. Create New/Add to Set
-2. Open Set
-3. Exit""")
+2. Open Sets
+3. See scores for a set
+4. Exit""")
         choice = input("Choice: ").lower()
         action = menu_actions.get(choice)
         if action:
