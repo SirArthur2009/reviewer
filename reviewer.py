@@ -2,7 +2,7 @@ import random
 import sqlite3
 import time
 
-FILENAME = "C:/Users/levig/OneDrive/Documents/Coding/Python/Complex_Programs/reviewer/vocaber.db"
+FILENAME = r"C:/Users/Levi Bryan/Documents/transfers/Coding/Python/Complex_Programs/reviewer/vocaber.db"
 
 # ======= FOR LOGGING AND RETRIEVING SCORES INTO A DATABASE =======
 def logScore(setName: str, person: str, score: int, time: float):
