@@ -1,8 +1,13 @@
 import random
 import sqlite3
 import time
+import os
 
-FILENAME = r"C:/Users/Levi Bryan/Documents/transfers/Coding/Python/Complex_Programs/reviewer/vocaber.db"
+#TODO: STOP HARDCODING! Add where it access the current folder and then vocaber.db
+# ======= FILENAME =======
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+FILENAME = os.path.join(BASE_DIR, "vocaber.db")
 
 # ======= FOR LOGGING AND RETRIEVING SCORES INTO A DATABASE =======
 def logScore(setName: str, person: str, score: int, time: float):
@@ -204,9 +209,9 @@ def runThrough(terms):
         firstLoop = True
         while answersLeft:
             if firstLoop:
-                answer = input(f"What is an answer for {term[1]}? \n")
+                answer = input(f"{term[1]} \n")
             else:
-                answer = input(f"What is another answer for {term[1]}? \n")
+                answer = input(f"Another Answer: {term[1]}\n")
 
             if answer.lower() in ['q', 'quit']:
                 break
