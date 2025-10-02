@@ -3,7 +3,7 @@ import sqlite3
 import time
 import os
 
-#TODO: STOP HARDCODING! Add where it access the current folder and then vocaber.db
+
 # ======= FILENAME =======
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
